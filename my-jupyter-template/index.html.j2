@@ -184,23 +184,22 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 function toggle_visibility(a) {
     preElement = a.cell.querySelector('pre');
     if ( !a.toggle ) {
-        a.toggle = true;
         // hide cell
-        preElement.innerHTML = a.short_pre;
-        // a.cell.style.visibility='hidden';
-        // a.cell.style.position='absolute';
+        a.toggle = true;
+        a.short_pre.style.display = 'block';
+        a.full_pre.style.display = 'none';
         a.innerHTML = '[show code]';
     } else {
-        a.toggle = false;
         // show cell
-        preElement.innerHTML = a.full_pre;
-        // a.cell.style.visibility='visible';
-        // a.cell.style.position='';
+        a.toggle = false;
+        a.short_pre.style.display = 'none';
+        a.full_pre.style.display = 'block';
         a.innerHTML = '[hide code]';
     }
 }
 
 function add_toggle(cell) {
+       var inputWrapper = cell.querySelector('.jp-Cell-inputWrapper');
        var a = document.createElement('A');
        a.href='#'
        a.cell = cell;
@@ -208,10 +207,28 @@ function add_toggle(cell) {
        var div = document.createElement('DIV');
        div.style.textAlign = 'right';
        div.appendChild(a);
-       cell.after(div);
+       inputWrapper.after(div);
        var preElement = cell.querySelector('.jp-InputArea pre');
-       a.full_pre = preElement.innerHTML
-       a.short_pre = preElement.innerHTML.split('\n').slice(0, 1).join('\n');
+       // deep copy of pre element
+       a.short_pre = preElement.cloneNode(true);
+       // remove lines until match of "@CX-TOGGLE"
+       var lines = a.short_pre.innerHTML.split('\n');
+       var i = 0;
+       while ( i < lines.length ) {
+           if ( lines[i].indexOf('@CX-TOGGLE') >= 0 ) {
+               break;
+           }
+           i++;
+       }
+       lines.splice(i,Infinity);
+       a.short_pre.innerHTML = lines.join('\n');
+       a.short_pre.style.display = 'none';
+       // a.short_pre.innerHTML = a.short_pre.innerHTML.split('\n').slice(0, 1).join('\n');
+       a.full_pre = preElement;
+       var lines = preElement.innerHTML.split('\n');
+       var filteredLines = lines.filter(line => !line.includes('@CX'));
+       preElement.innerHTML = filteredLines.join('\n');
+       a.full_pre.after(a.short_pre);
        toggle_visibility(a);
 }
 
@@ -227,24 +244,34 @@ function clear_cx_lines(cell) {
     }
 }
 
+var CX_CUTOFF = false;
+
 function refresh_cell(cell) {
     if( cell.refreshed ) return;
     cell.refreshed = true;
 
-    if( !cell.classList.contains('jp-CodeCell')) return;
-
+    // Remove all cells after CX-CUTOFF (including the current cell)
+    if ( cell.innerHTML.indexOf('@CX-CUTOFF') >= 0 ) {
+      CX_CUTOFF = true;
+    }
+    if( CX_CUTOFF ) {
+      cell.remove();
+      return;
+    }
+    if( !cell.classList.contains('jp-CodeCell')) { return; }
     var inputArea = cell.querySelector('.jp-InputArea');
     var inputText = inputArea.innerText;
-    if ( inputText.indexOf('@CX-NO-OUTPUT') >= 0 ) {
+    if (inputText.indexOf('@CX-NO-OUTPUT') >= 0) {
         var outputArea = cell.querySelector('.jp-Cell-outputWrapper');
-        outputArea.remove();
+        if (outputArea) {
+          outputArea.remove();
+        }
     }
-    if ( inputText.indexOf('@CX-HIDE') >= 0 ) {
-        clear_cx_lines(cell);
-        cell.style.display = 'none';
-    } else if ( inputText.indexOf('@CX-TOGGLE') >= 0 ) {
-        clear_cx_lines(cell);
+    if ( inputText.indexOf('@CX-TOGGLE') >= 0 ) {
         add_toggle(cell);
+    }
+    if (inputText.indexOf('@CX-REMOVE') >= 0) {
+        cell.remove();
     }
 }
 
@@ -258,7 +285,6 @@ function refresh() {
 document.addEventListener("DOMContentLoaded", function(event) {
     refresh();
 });
-
 </script>
 
 {%- endblock html_head -%}
@@ -274,6 +300,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
 {% endif %}
 
 <style>
+.jp-OutputArea-output pre {
+    background-color: #f8f8f8;
+    padding: 3px;
+}
+
+h2 {
+  padding-bottom: .3em;
+  border-bottom: 1px solid #eaecef;
+}
+
+h3 {
+  padding-bottom: .1em;
+  border-bottom: 1px solid #eaecef;
+}
+
 #headline {
    color:#a00;
    text-align: center;
