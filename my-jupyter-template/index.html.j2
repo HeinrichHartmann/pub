@@ -152,25 +152,34 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 {%- block html_head_css -%}
 {%- endblock html_head_css -%}
 
-<style>
-body {
-  width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-}
-</style>
-
 <script>
-function hidePrompts() {
-    var inputPrompts = document.querySelectorAll('.jp-InputPrompt');
-    for (var i = 0; i < inputPrompts.length; i++) {
-        inputPrompts[i].style.visibility = 'hidden';
-    }
-    var inputPrompts = document.querySelectorAll('.jp-OutputPrompt');
-    for (var i = 0; i < inputPrompts.length; i++) {
-        inputPrompts[i].style.visibility = 'hidden';
-    }
-}
+//
+// DOM Structure:
+//
+// <div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+//   <div class="jp-Cell-inputWrapper">
+//     <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser"></div>
+//     <div class="jp-InputArea jp-Cell-inputArea">
+//       <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor">
+//         <div class="CodeMirror cm-s-jupyter">
+//           <div class="highlight hl-ipython3">
+//             <pre></pre>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+//   <div class="jp-Cell-outputWrapper">
+//     <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+//     </div>
+//     <div class="jp-OutputArea jp-Cell-outputArea">
+//       <div class="jp-OutputArea-child">
+//       <div class="jp-RenderedText jp-OutputArea-output">
+//       </div>
+//     </div>
+//    </div>
+//  </div>
+// </div>
 
 function toggle_visibility(a) {
     preElement = a.cell.querySelector('pre');
@@ -226,6 +235,10 @@ function refresh_cell(cell) {
 
     var inputArea = cell.querySelector('.jp-InputArea');
     var inputText = inputArea.innerText;
+    if ( inputText.indexOf('@CX-NO-OUTPUT') >= 0 ) {
+        var outputArea = cell.querySelector('.jp-Cell-outputWrapper');
+        outputArea.remove();
+    }
     if ( inputText.indexOf('@CX-HIDE') >= 0 ) {
         clear_cx_lines(cell);
         cell.style.display = 'none';
@@ -244,7 +257,6 @@ function refresh() {
 
 document.addEventListener("DOMContentLoaded", function(event) {
     refresh();
-    hidePrompts();
 });
 
 </script>
@@ -253,15 +265,51 @@ document.addEventListener("DOMContentLoaded", function(event) {
 </head>
 {%- endblock header -%}
 
+
 {%- block body_header -%}
 {% if resources.theme == 'dark' %}
 <body class="jp-Notebook" data-jp-theme-light="false" data-jp-theme-name="JupyterLab Dark">
 {% else %}
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 {% endif %}
-{%- endblock body_header -%}
 
+<style>
+#headline {
+   color:#a00;
+   text-align: center;
+   width: 100%;
+   font-family: Helvetica, arial, sans-serif;
+   font-size: 20px;
+   color: #a00;
+   font-weight: bold;
+   margin-top: 2em;
+   text-decoration: none;
+   display: block;
+}
+#main {
+  width: 58em;
+  margin-right: auto;
+  margin-left: auto;
+  box-sizing: border-box;
+  padding: 45px 45px 5px 45px;
+}
+
+@media only screen and (max-width: 58em) {
+#main {
+  text-align: left;
+  width: 100%;
+  margin: 0;
+  margin-top: 3em;
+  padding: 0.1em;
+}
+</style>
+
+<header><a id="headline" href="https://heinrichhartmann.com">HeinrichHartmann.com</a></header>
+<main id="main">
+
+{%- endblock body_header -%}
 {% block body_footer %}
+</main>
 </body>
 {% endblock body_footer %}
 
