@@ -161,11 +161,6 @@ body {
 </style>
 
 <script>
-function isCodeCell(cell) {
-    var inputArea = cell.querySelector('.jp-InputArea');
-    return inputArea && !inputArea.querySelector('.jp-RenderedMarkdown');
-}
-
 function hidePrompts() {
     var inputPrompts = document.querySelectorAll('.jp-InputPrompt');
     for (var i = 0; i < inputPrompts.length; i++) {
@@ -178,44 +173,42 @@ function hidePrompts() {
 }
 
 function toggle_visibility(a) {
-    if( a.cell.style.visibility=='hidden' ) {
-        a.cell.style.visibility='visible';
-        a.cell.style.position='';
-        a.innerHTML = '[hide code]';
-    }
-    else {
-        a.cell.style.visibility='hidden';
-        a.cell.style.position='absolute';
+    preElement = a.cell.querySelector('pre');
+    if ( !a.toggle ) {
+        a.toggle = true;
+        // hide cell
+        preElement.innerHTML = a.short_pre;
+        // a.cell.style.visibility='hidden';
+        // a.cell.style.position='absolute';
         a.innerHTML = '[show code]';
+    } else {
+        a.toggle = false;
+        // show cell
+        preElement.innerHTML = a.full_pre;
+        // a.cell.style.visibility='visible';
+        // a.cell.style.position='';
+        a.innerHTML = '[hide code]';
     }
 }
 
-function luc21893_refresh_cell(cell) {
-    if( cell.luc21893 ) return;
-    cell.luc21893 = true;
-
-    if( !isCodeCell(cell) ) return;
-
-    var inputArea = cell.querySelector('.jp-InputArea');
-    var inputText = inputArea.innerText;
-    if ( inputText.indexOf('@CX-HIDE') >= 0 ) {
-        cell.parentNode.style.display = 'none';
-    } else if ( inputText.indexOf('@CX-TOGGLE') >= 0 ) {
-       // Add "[hide cell]" button
+function add_toggle(cell) {
        var a = document.createElement('A');
        a.href='#'
        a.cell = cell;
        a.setAttribute( 'onclick', "toggle_visibility(this); return false;" );
-       a.innerHTML = '[show code]';
        var div = document.createElement('DIV');
        div.style.textAlign = 'right';
        div.appendChild(a);
-       cell.parentNode.insertBefore( div, cell.nextSibling );
-       cell.style.visibility='hidden';
-       cell.style.position='absolute';
-    }
+       cell.after(div);
+       var preElement = cell.querySelector('.jp-InputArea pre');
+       a.full_pre = preElement.innerHTML
+       a.short_pre = preElement.innerHTML.split('\n').slice(0, 1).join('\n');
+       toggle_visibility(a);
+}
 
-    // Remove all lines containing '@CX'
+function clear_cx_lines(cell) {
+    // Clear lines with "@CX"
+    var inputArea = cell.querySelector('.jp-InputArea');
     var preElement = inputArea.querySelector('pre');
     if (preElement && preElement.innerHTML.includes('@CX')) {
         var lines = preElement.innerHTML.split('\n');
@@ -223,24 +216,34 @@ function luc21893_refresh_cell(cell) {
         preElement.innerHTML = filteredLines.join('\n');
         return;
     }
-
 }
 
-function luc21893_refresh() {
-    if( document.querySelector('#jp-top-panel') == null ) {
-        console.log("NOT INSIDE JUPYTER")
-        var codeCells = document.querySelectorAll('.jp-InputArea')
-        for( var i = 1; i < codeCells.length; i++ ) {
-            luc21893_refresh_cell(codeCells[i].parentNode)
-        }
-        window.onload = luc21893_refresh;
-    } else {
-        console.log("We are inside JUPYTER");
+function refresh_cell(cell) {
+    if( cell.refreshed ) return;
+    cell.refreshed = true;
+
+    if( !cell.classList.contains('jp-CodeCell')) return;
+
+    var inputArea = cell.querySelector('.jp-InputArea');
+    var inputText = inputArea.innerText;
+    if ( inputText.indexOf('@CX-HIDE') >= 0 ) {
+        clear_cx_lines(cell);
+        cell.style.display = 'none';
+    } else if ( inputText.indexOf('@CX-TOGGLE') >= 0 ) {
+        clear_cx_lines(cell);
+        add_toggle(cell);
     }
 }
 
+function refresh() {
+    var cells = document.querySelectorAll('.jp-Cell')
+    cells.forEach(cell => {
+       refresh_cell(cell);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
-    luc21893_refresh();
+    refresh();
     hidePrompts();
 });
 
