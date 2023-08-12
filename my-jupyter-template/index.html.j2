@@ -204,14 +204,15 @@ function add_toggle(cell) {
        a.href='#'
        a.cell = cell;
        a.setAttribute( 'onclick', "toggle_visibility(this); return false;" );
+
        var div = document.createElement('DIV');
        div.style.textAlign = 'right';
        div.appendChild(a);
        inputWrapper.after(div);
        var preElement = cell.querySelector('.jp-InputArea pre');
-       // deep copy of pre element
+
+       // .short_pre contains copy of per with all lines until @CX-TOGGLE
        a.short_pre = preElement.cloneNode(true);
-       // remove lines until match of "@CX-TOGGLE"
        var lines = a.short_pre.innerHTML.split('\n');
        var i = 0;
        while ( i < lines.length ) {
@@ -223,10 +224,11 @@ function add_toggle(cell) {
        lines.splice(i,Infinity);
        a.short_pre.innerHTML = lines.join('\n');
        a.short_pre.style.display = 'none';
-       // a.short_pre.innerHTML = a.short_pre.innerHTML.split('\n').slice(0, 1).join('\n');
+
+       // .full_pre is the original pre with @CX-TOGGLE line removed
        a.full_pre = preElement;
        var lines = preElement.innerHTML.split('\n');
-       var filteredLines = lines.filter(line => !line.includes('@CX'));
+       var filteredLines = lines.filter(line => !line.includes('@CX-TOGGLE'));
        preElement.innerHTML = filteredLines.join('\n');
        a.full_pre.after(a.short_pre);
        toggle_visibility(a);
