@@ -225,10 +225,10 @@ function add_toggle(cell) {
        a.short_pre.innerHTML = lines.join('\n');
        a.short_pre.style.display = 'none';
 
-       // .full_pre is the original pre with @CX-TOGGLE line removed
+       // .full_pre is the original pre with @CX lines removed
        a.full_pre = preElement;
        var lines = preElement.innerHTML.split('\n');
-       var filteredLines = lines.filter(line => !line.includes('@CX-TOGGLE'));
+       var filteredLines = lines.filter(line => !line.includes('@CX'));
        preElement.innerHTML = filteredLines.join('\n');
        a.full_pre.after(a.short_pre);
        toggle_visibility(a);
@@ -263,6 +263,12 @@ function refresh_cell(cell) {
     if( !cell.classList.contains('jp-CodeCell')) { return; }
     var inputArea = cell.querySelector('.jp-InputArea');
     var inputText = inputArea.innerText;
+    if (inputText.indexOf('@CX-NO-INPUT') >= 0) {
+        var area = cell.querySelector('.jp-Cell-inputWrapper');
+        if (area) {
+          area.remove();
+        }
+    }
     if (inputText.indexOf('@CX-NO-OUTPUT') >= 0) {
         var outputArea = cell.querySelector('.jp-Cell-outputWrapper');
         if (outputArea) {
